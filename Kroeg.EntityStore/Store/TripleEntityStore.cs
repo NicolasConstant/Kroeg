@@ -28,6 +28,7 @@ namespace Kroeg.EntityStore.Store
 
         private Dictionary<string, APEntity> _quickMap = new Dictionary<string, APEntity>();
 
+        internal int CurrentServer { get; set; }
 
         private static JsonLD.API _api = new JsonLD.API(null);
 
@@ -235,11 +236,13 @@ namespace Kroeg.EntityStore.Store
 
             stopwatch.Stop();
             _logger.LogWarning("Molding {id} from cache took {time}", mainObj.Id, stopwatch.Elapsed);
-            return new APEntity { Data = mainObj, Id = mainObj.Id, Updated = mold.Updated, IsOwner = mold.IsOwner, Type = mold.Type, DbId = mold.EntityId };
+            return new APEntity { Data = mainObj, Id = mainObj.Id, Updated = mold.Updated, IsOwner = mold.IsOwner == CurrentServer, Type = mold.Type, DbId = mold.EntityId };
         }
 
         private async Task<APEntity> _build(APTripleEntity mold)
         {
+            Debug.Assert(CurrentServer != 0, "Codepath did not prepare the entity store! please do so.");
+
             var triples = (await _connection.QueryAsync<Triple>("select * from \"Triples\" where \"SubjectEntityId\" = @Id", new { Id = mold.EntityId })).ToList();
 
             await _preload(triples.Select(a => a.SubjectId)
@@ -313,7 +316,7 @@ namespace Kroeg.EntityStore.Store
             if (exists == null)
             {
                 entity.Updated = DateTime.Now;
-                var dbEntity = new APTripleEntity { Updated = entity.Updated, IsOwner = entity.IsOwner, Type = entity.Type };
+                var dbEntity = new APTripleEntity { Updated = entity.Updated, IsOwner = entity.IsOwner ? (int?)null : CurrentServer, Type = entity.Type };
                 var attr = (await ReverseAttribute(entity.Id, true)).Value;
                 dbEntity.IdId = attr;
                 dbEntity.EntityId = await _connection.ExecuteScalarAsync<int>("insert into \"TripleEntities\" (\"Updated\", \"IsOwner\", \"Type\", \"IdId\") values (@Updated, @IsOwner, @Type, @IdId) returning \"EntityId\"", dbEntity);
@@ -365,6 +368,7 @@ namespace Kroeg.EntityStore.Store
             }
 
             entity.DbId = exists.EntityId;
+            _quickMap[entity.Id] = entity.Clone();
 
             return entity;
         }

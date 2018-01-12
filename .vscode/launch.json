@@ -5,20 +5,6 @@
    "version": "0.2.0",
    "configurations": [
     {
-        "name": "Launch JSON-LD tester",
-        "type": "coreclr",
-        "request": "launch",
-        "preLaunchTask": "build",
-        // If you have changed target frameworks, make sure to update the program path.
-        "program": "${workspaceRoot}/Kroeg.JsonLD.Tester/bin/Debug/netcoreapp2.0/Kroeg.JsonLD.Tester.dll",
-        "args": [],
-        "cwd": "${workspaceRoot}/Kroeg.JsonLD.Tester",
-        // For more information about the 'console' field, see https://github.com/OmniSharp/omnisharp-vscode/blob/master/debugger-launchjson.md#console-terminal-window
-        "console": "internalConsole",
-        "stopAtEntry": false,
-        "internalConsoleOptions": "openOnSessionStart"
-    },
-    {
         "name": "Launch Kroeg.Server",
         "type": "coreclr",
         "request": "launch",

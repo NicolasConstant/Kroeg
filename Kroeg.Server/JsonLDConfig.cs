@@ -45,6 +45,8 @@ namespace Kroeg.Server {
                     ["c2s:accepts"] = new JObject { ["@type"] = "@id"},
                     ["c2s:rejects"] = new JObject { ["@type"] = "@id"},
                     ["c2s:replies"] = new JObject { ["@type"] = "@id"},
+
+                    ["config"] = "https://puckipedia.com/kroeg/config#"
                 }
             );
 

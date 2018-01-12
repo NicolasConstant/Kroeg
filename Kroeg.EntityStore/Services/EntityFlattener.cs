@@ -165,6 +165,9 @@ namespace Kroeg.EntityStore.Services
             @object["bto"].Clear();
             @object["bcc"].Clear();
 
+            foreach (var item in @object.Where(a => a.Key.StartsWith("https://puckipedia.com/kroeg/config#")))
+                item.Value.Clear();
+
             foreach (var kv in @object)
             {
                 foreach (var value in kv.Value)

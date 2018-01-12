@@ -273,14 +273,13 @@ namespace Kroeg.Server.Controllers
             create["object"].Add(ASTerm.MakeSubObject(obj));
             create["to"].Add(ASTerm.MakeId("https://www.w3.org/ns/activitystreams#Public"));
 
-            var stagingStore = new StagingEntityStore(_entityStore);
-            var apo = await _flattener.FlattenAndStore(stagingStore, create);
-            var handler = new CreateActorHandler(stagingStore, apo, null, null, User, _collectionTools, _entityData, _connection);
+            var apo = await _flattener.FlattenAndStore(_entityStore, create);
+            var handler = new CreateActorHandler(_entityStore, apo, null, null, User, _collectionTools, _entityData, _connection);
             await handler.Handle();
 
             var resultUser = await _entityStore.GetEntity(handler.MainObject.Data["object"].First().Id, false);
             var outbox = await _entityStore.GetEntity(resultUser.Data["outbox"].First().Id, false);
-            var delivery = new DeliveryHandler(stagingStore, handler.MainObject, resultUser, outbox, User, _collectionTools, _provider.GetRequiredService<DeliveryService>());
+            var delivery = new DeliveryHandler(_entityStore, handler.MainObject, resultUser, outbox, User, _collectionTools, _provider.GetRequiredService<DeliveryService>());
             await delivery.Handle();
 
             return RedirectToAction("Edit", new { id = resultUser.Id });

@@ -1,18 +1,28 @@
 using System;
+using System.Collections.Generic;
 using System.Data;
 using System.Data.Common;
 using System.Linq;
 using Dapper;
+using Microsoft.Extensions.Configuration;
 
 namespace Kroeg.EntityStore
 {
     public class DatabaseManager
     {
         private readonly DbConnection _connection;
+        private readonly IConfiguration _configuration;
 
-        public DatabaseManager(DbConnection connection)
+        public DatabaseManager(DbConnection connection, IConfiguration configuration)
         {
             _connection = connection;
+            _configuration = configuration;
+
+             _todo = new Dictionary<string, _migration>()
+            {
+                ["hello, world"] = _addOwnerTable,
+                [""] = _createTables
+            };
         }
 
         private class KroegMigrationEntry
@@ -21,19 +31,23 @@ namespace Kroeg.EntityStore
             public string Name { get; set; }
         }
 
+        private delegate void _migration();
+        private Dictionary<string, _migration> _todo;
+
         public void EnsureExists()
         {
             _connection.Execute("create table if not exists kroeg_migrations (\"Id\" serial primary key, \"Name\" text)");
 
-            var migrations = _connection.Query<KroegMigrationEntry>("select * from kroeg_migrations");
-            if (migrations.Count() == 0)
-            {
-                _createTables();
-            }
+            var migrations = _connection.Query<KroegMigrationEntry>("select * from kroeg_migrations order by \"Id\" desc");
+            var lastMigration = migrations.FirstOrDefault()?.Name ?? "";
+            while (_todo.ContainsKey(lastMigration))
+                _todo[lastMigration]();
         }
 
         private void _createTables()
         {
+            Console.WriteLine("[migration] Creating tables... ");
+
             _connection.Execute(@"create table ""Attributes"" (
                 ""AttributeId"" serial primary key,
                 ""Uri"" text not null unique
@@ -46,7 +60,7 @@ namespace Kroeg.EntityStore
                 ""IdId"" int references ""Attributes""(""AttributeId""),
                 ""Type"" text,
                 ""Updated"" timestamp,
-                ""IsOwner"" boolean
+                ""IsOwner"" int references ""TripleEntities"" (""EntityId"")
             )");
 
             _connection.Execute(@"create index on ""TripleEntities""(""IdId"")");
@@ -130,6 +144,18 @@ namespace Kroeg.EntityStore
             );");
 
             _connection.Execute("insert into kroeg_migrations (\"Name\") values ('hello, world')");
+            _connection.Execute("insert into kroeg_migrations (\"Name\") values ('kaaskop')");
+        }
+
+        private void _addOwnerTable()
+        {
+            Console.WriteLine("[migration] Adding KaaS support... ");
+
+            int id = _connection.ExecuteScalar<int>("insert into \"Attributes\" (\"Uri\") values (@Uri) on conflict (\"Uri\") do update set \"Uri\" = @Uri returning \"AttributeId\"", new { Uri = "_instance" });
+            int entity = _connection.ExecuteScalar<int>("insert into \"TripleEntities\" (\"IdId\", \"Type\", \"Updated\", \"IsOwner\") values (@Id, 'https://puckipedia.com/kroeg/ns#Server', @Updated, true)", new { Id = id, Updated = DateTime.Now });
+            _connection.Execute(@"alter table ""TripleEntities"" alter column ""IsOwner"" type int using case when false then null else @Id end, add foreign key (""IsOwner"") references ""TripleEntities"" (""EntityId"")", new { Id = entity });
+
+            _connection.Execute("insert into kroeg_migrations (\"Name\") values ('kaaskop')");
         }
     }
 }

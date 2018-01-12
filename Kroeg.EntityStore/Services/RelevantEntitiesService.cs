@@ -158,7 +158,7 @@ namespace Kroeg.EntityStore.Services
             var typeAttr = (await _entityStore.ReverseAttribute("rdf:type", true)).Value;
             var undoAttr = (await _entityStore.ReverseAttribute("https://www.w3.org/ns/activitystreams#Undo", true)).Value;
             
-            var query = "select a.* from \"TripleEntities\" a where a.\"IsOwner\" = TRUE" +
+            var query = "select a.* from \"TripleEntities\" a where a.\"IsOwner\" = @IsOwnerId" +
                 $" and exists(select 1 from \"Triples\" where \"PredicateId\" = @ActorAttr and \"AttributeId\" = @ActorId and \"SubjectId\" = a.\"IdId\" and \"SubjectEntityId\" = a.\"EntityId\")" +
                 $" and exists(select 1 from \"Triples\" where \"PredicateId\" = @ObjectAttr and \"AttributeId\" = any(@Ids) and \"SubjectId\" = a.\"IdId\" and \"SubjectEntityId\" = a.\"EntityId\")";
 
@@ -170,7 +170,8 @@ namespace Kroeg.EntityStore.Services
                     ActorAttr = actorAttr,
                     ActorId = actorId,
                     ObjectAttr = objectAttr,
-                    Ids = allObjectIds
+                    Ids = allObjectIds,
+                    IsOwnerId = _entityStore.CurrentServer
                 });
 
             var undoneShapes = await _connection.QueryAsync<APTripleEntity>(query,
@@ -178,7 +179,8 @@ namespace Kroeg.EntityStore.Services
                     ActorAttr = typeAttr,
                     ActorId = undoAttr,
                     ObjectAttr = objectAttr,
-                    Ids = entityShapes.Select(a => a.IdId).ToList()
+                    Ids = entityShapes.Select(a => a.IdId).ToList(),
+                    IsOwnerId = _entityStore.CurrentServer
                 });
 
             var replyShapes = await _connection.QueryAsync<APTripleEntity>(replyQuery,
@@ -238,7 +240,7 @@ namespace Kroeg.EntityStore.Services
             start += string.Join(" and ", attributeMapping.Select(a => $"exists(select 1 from \"Triples\" where \"PredicateId\" = {a.Key} and \"AttributeId\" = {a.Value} and \"SubjectId\" = a.\"IdId\" and \"SubjectEntityId\" = a.\"EntityId\")"));
 
             if (isOwner.HasValue)
-                start += " and a.\"IsOwner\" = " + (isOwner.Value ? "TRUE" : "FALSE");
+                start += " and a.\"IsOwner\" = " + (isOwner.Value ? _entityStore.CurrentServer.ToString() : "null");
 
             return await _entityStore.GetEntities((await _connection.QueryAsync<APTripleEntity>(start, new { Like = likeValue })).Select(a => a.EntityId).ToList());
         }
@@ -284,8 +286,8 @@ namespace Kroeg.EntityStore.Services
             var reverseId = await _entityStore.ReverseAttribute("https://www.w3.org/ns/activitystreams#preferredUsername", false);
             if (reverseId == null) return new List<APEntity>();
 
-            var b = await _connection.QueryAsync<APTripleEntity>("select a.* from \"TripleEntities\" a, \"Triples\" b where a.\"IsOwner\" = TRUE and b.\"SubjectId\" = a.\"IdId\" and b.\"SubjectEntityId\" = a.\"EntityId\" and b.\"PredicateId\" = @Predicate and b.\"Object\" = @Object",
-                new { Predicate = reverseId.Value, Object = username });
+            var b = await _connection.QueryAsync<APTripleEntity>("select a.* from \"TripleEntities\" a, \"Triples\" b where a.\"IsOwner\" = @IsOwnerId and b.\"SubjectId\" = a.\"IdId\" and b.\"SubjectEntityId\" = a.\"EntityId\" and b.\"PredicateId\" = @Predicate and b.\"Object\" = @Object",
+                new { Predicate = reverseId.Value, Object = username, IsOwnerId = _entityStore.CurrentServer });
 
             return await _entityStore.GetEntities(b.Select(a => a.EntityId).ToList());
         }

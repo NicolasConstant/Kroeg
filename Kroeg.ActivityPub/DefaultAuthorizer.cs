@@ -21,7 +21,7 @@ namespace Kroeg.ActivityPub
             if (entity.Type == "_blocks" && !entity.Data["attributedTo"].Any(a => a.Id == userId)) return false;
             if (entity.Type == "_blocked") return false;
             if (entity.Type == "https://www.w3.org/ns/activitystreams#OrderedCollection" || entity.Type == "https://www.w3.org/ns/activitystreams#Collection" || entity.Type.StartsWith("_")) return true;
-            if (EntityData.IsActor(entity.Data)) return true;
+            if (EntityData.IsActor(entity.Data) || entity.Type == "https://puckipedia.com/kroeg/ns#Server") return true;
 
             var audience = DeliveryService.GetAudienceIds(entity.Data);
             return (

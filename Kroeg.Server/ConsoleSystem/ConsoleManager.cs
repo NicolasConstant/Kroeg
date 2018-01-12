@@ -59,20 +59,21 @@ namespace Kroeg.Server.ConsoleSystem
             _registerServices();
         }
 
-        public static void Do()
+        public static void Do(string baseUri)
         {
             var manager = new ConsoleManager();
-            manager._do();
+            manager._do(baseUri);
 
             while (true)
                 Thread.Sleep(-1);
         }
 
-        private async void _do()
+        private async void _do(string baseUri)
         {
             var provider = _services.BuildServiceProvider();
             var sevc = provider.GetService<ServerConfig>();
-            await ActivityStreams.ASObject.SetContext(JsonLDConfig.GetContext(true), sevc.BaseUri + "render/context");
+            await ActivityStreams.ASObject.SetContext(JsonLDConfig.GetContext(true), "render/context");
+            await sevc.Prepare(new Uri(baseUri));
 
 
             provider
@@ -132,7 +133,7 @@ namespace Kroeg.Server.ConsoleSystem
             
             _services.AddSingleton(tokenSettings);
 
-            _services.AddSingleton(new ServerConfig(_configuration.GetSection("Kroeg")));
+            _services.AddSingleton(a => ActivatorUtilities.CreateInstance<ServerConfig>(a, _configuration.GetSection("Kroeg")));
             _services.AddSingleton(a => new URLService(a.GetService<ServerConfig>())
             {
                 EntityNames = _configuration.GetSection("EntityNames")

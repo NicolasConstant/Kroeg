@@ -20,28 +20,6 @@ namespace Kroeg.EntityStore.Models
 
         public DateTime Updated { get; set; }
 
-        public bool IsOwner { get; set; }
-
-        [InverseProperty("SubjectEntity")]
-        public List<Triple> Triples { get; set; }
-
-/*
-        [NotMapped]
-        public APEntity Entity
-        {
-            get => new APEntity {
-                Data = null,
-                Type = Type,
-                Updated = Updated,
-                IsOwner = IsOwner
-            };
-
-            set {
-                Type = value.Type;
-                Updated = value.Updated;
-                IsOwner = value.IsOwner;
-            }
-        }
-        */
+        public int? IsOwner { get; set; }
     }
 }

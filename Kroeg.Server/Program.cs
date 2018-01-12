@@ -12,7 +12,7 @@ namespace Kroeg.Server
         {
             if (args.Contains("console"))
             {
-                ConsoleSystem.ConsoleManager.Do();
+                ConsoleSystem.ConsoleManager.Do(args[1]);
                 return;
             }
 
@@ -24,7 +24,7 @@ namespace Kroeg.Server
             var listenOn = new Uri(args.Length == 0 ? "http://0.0.0.0:5000/" : args[0]);
             var builder = new UriBuilder(listenOn);
             var bur = config.GetSection("Kroeg");
-            builder.Path = (new Uri(config.GetSection("Kroeg")["BaseUri"])).AbsolutePath ?? "/";
+            builder.Path = "/";
 
             var host = new WebHostBuilder()
                 .UseKestrel()

@@ -34,6 +34,8 @@ using Kroeg.EntityStore.Services;
 using Kroeg.EntityStore.Notifier;
 using Kroeg.EntityStore.Salmon;
 using Kroeg.ActivityPub.Services;
+using Dapper;
+using Kroeg.ActivityStreams;
 
 namespace Kroeg.Server
 {
@@ -107,9 +109,9 @@ namespace Kroeg.Server
             };
             services.AddSingleton(tokenSettings);
 
-            services.AddSingleton(new ServerConfig(Configuration.GetSection("Kroeg")));
+            services.AddScoped(a => ActivatorUtilities.CreateInstance<ServerConfig>(a, Configuration.GetSection("Kroeg")));
 
-            services.AddSingleton<URLService>(a => new URLService(a.GetService<ServerConfig>()) {
+            services.AddScoped<URLService>(a => new URLService(a.GetService<ServerConfig>()) {
                 EntityNames = Configuration.GetSection("EntityNames")
             });
 
@@ -224,6 +226,7 @@ namespace Kroeg.Server
             app.UseStaticFiles();
 
             app.UseDeveloperExceptionPage();
+            app.UseMiddleware<EntityStorePrimer>();
             app.UseMiddleware<GetEntityMiddleware>();
             app.UseMvc();
 
@@ -235,8 +238,36 @@ namespace Kroeg.Server
                 ActivatorUtilities.CreateInstance<BackgroundTaskQueuer>(serviceProvider);
             }
 
-            var sevc = app.ApplicationServices.GetRequiredService<ServerConfig>();
-            await ActivityStreams.ASObject.SetContext(JsonLDConfig.GetContext(true), sevc.BaseUri + "render/context");
+            await ActivityStreams.ASObject.SetContext(JsonLDConfig.GetContext(true), "render/context");
+
+            var scop = app.ApplicationServices.CreateScope().ServiceProvider;
+            var sevc = scop.GetRequiredService<ServerConfig>();
+            var db = scop.GetRequiredService<DbConnection>();
+            while (!await db.ExecuteScalarAsync<bool>("select exists(select 1 from \"TripleEntities\" where \"Type\" = 'https://puckipedia.com/kroeg/ns#Server')"))
+            {
+                var obj = new ASObject();
+                obj.Type.Add("https://puckipedia.com/kroeg/ns#Server");
+
+                Console.WriteLine("--- Kroeg Config ---");
+                Console.Write("(Visible) name of the site: ");
+                obj["name"].Add(ASTerm.MakePrimitive(Console.ReadLine()));
+
+                Console.Write("Base URL: ");
+                obj["url"].Add(ASTerm.MakeId(Console.ReadLine()));
+
+                Console.Write("ID of the server object (enter if same as base URL): ");
+                obj.Id = Console.ReadLine();
+                if (string.IsNullOrWhiteSpace(obj.Id)) obj.Id = obj["url"][0].Id;
+
+                Console.WriteLine(obj.Serialize().ToString());
+                Console.Write("OK? [y/n] ");
+                if (!Console.ReadLine().Contains("y")) continue;
+
+                // issue: To use the EntityStore, I need to prepare it.
+                // but I can't prepare it without a server config object.
+                // solution: prime the DB
+                await sevc.Prime(APEntity.From(obj, true));
+            }
         }
     }
 }

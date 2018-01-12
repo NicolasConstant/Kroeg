@@ -20,16 +20,21 @@ namespace Kroeg.EntityStore.Services
         }
 
         public IConfiguration EntityNames { private get; set; }
+        private string _getTemplate(string a, string b)
+        {
+            var name = b + a.Substring(0, 1).ToUpper() + a.Substring(1);
+            return (string) _serverConfig.CurrentServer.Data["config:" + name].FirstOrDefault()?.Primitive ?? EntityNames[name];
+        }
 
 #region URL generation
         private string _getFormat(IEnumerable<string> type, string category, bool isRelative, string categoryTwo = null)
         {
-            var firstformatType = type.FirstOrDefault(a => EntityNames[a.ToLower()] != null);
-            if (firstformatType != null) return EntityNames[firstformatType.ToLower()];
-            if (isRelative && EntityNames["+" + category] != null) return EntityNames["+" + category];
-            if (categoryTwo != null && EntityNames["!" + categoryTwo] != null) return EntityNames["!" + categoryTwo];
-            if (EntityNames["!" + category] != null) return EntityNames["!" + category];
-            return EntityNames["!fallback"];
+            var firstformatType = type.FirstOrDefault(a => _getTemplate("type", a.ToLower()) != null);
+            if (firstformatType != null) return _getTemplate("type", firstformatType.ToLower());
+            if (isRelative && _getTemplate("relative", category) != null) return _getTemplate("relative", category);
+            if (categoryTwo != null && _getTemplate("category", categoryTwo) != null) return _getTemplate("category", categoryTwo);
+            if (_getTemplate("category", category) != null) return _getTemplate("category", category);
+            return _getTemplate("category", "fallback") ?? "${$.attributedTo|$.actor|resolve|%.preferredUsername|shortguid}/${$.type|slug}/${shortguid}";
         }
 
         private static string _generateSlug(string val)
