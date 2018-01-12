@@ -24,7 +24,7 @@ namespace Kroeg.EntityStore.Services
 
         private APEntity _currentServer;
 
-        internal APEntity CurrentServer { get { return _currentServer; } }
+        public APEntity CurrentServer { get { return _currentServer; } }
 
         public ServerConfig(IConfigurationSection kroegSection, TripleEntityStore entityStore, DbConnection database)
         {

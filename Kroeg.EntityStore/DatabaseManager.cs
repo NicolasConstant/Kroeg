@@ -40,8 +40,13 @@ namespace Kroeg.EntityStore
 
             var migrations = _connection.Query<KroegMigrationEntry>("select * from kroeg_migrations order by \"Id\" desc");
             var lastMigration = migrations.FirstOrDefault()?.Name ?? "";
-            while (_todo.ContainsKey(lastMigration))
-                _todo[lastMigration]();
+            using (var trans = _connection.BeginTransaction())
+            {
+                while (_todo.ContainsKey(lastMigration))
+                    _todo[lastMigration]();
+
+                trans.Commit();
+            }
         }
 
         private void _createTables()

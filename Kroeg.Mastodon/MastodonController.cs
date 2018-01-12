@@ -16,12 +16,14 @@ namespace Kroeg.Mastodon
         private readonly IEntityStore _entityStore;
         private readonly RelevantEntitiesService _relevantEntities;
         private readonly CollectionTools _collectionTools;
+        private readonly ServerConfig _serverConfig;
 
-        public MastodonController(IEntityStore entityStore, RelevantEntitiesService relevantEntities, CollectionTools collectionTools)
+        public MastodonController(IEntityStore entityStore, RelevantEntitiesService relevantEntities, CollectionTools collectionTools, ServerConfig serverConfig)
         {
             _entityStore = entityStore;
             _relevantEntities = relevantEntities;
             _collectionTools = collectionTools;
+            _serverConfig = serverConfig;
         }
 
         private async Task<Account> _processAccount(APEntity entity)
@@ -400,6 +402,25 @@ namespace Kroeg.Mastodon
         public IActionResult GetStatusCard(string id)
         {
             return Json(new {});
+        }
+
+        [HttpGet("instance")]
+        public IActionResult GetInstance()
+        {
+            var instance = new Instance
+            {
+                uri = _serverConfig.BaseDomain,
+                title = (string) _serverConfig.CurrentServer.Data["name"].FirstOrDefault()?.Primitive ?? "Unnamed Kroeg server",
+                description = (string) _serverConfig.CurrentServer.Data["summary"].FirstOrDefault()?.Primitive,
+                email = "",
+                version = "2.1.3 but actually Kroeg :3"
+            };
+
+            instance.stats["user_count"] = 0;
+            instance.stats["status_count"] = 0;
+            instance.stats["domain_count"] = 0;
+
+            return Json(instance);
         }
 
         private delegate Task<T> _processItem<T>(CollectionTools.EntityCollectionItem item);
