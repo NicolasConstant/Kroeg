@@ -60,7 +60,7 @@ namespace Kroeg.ActivityPub.ServerToServer
             var toFollowOrLike = await EntityStore.GetEntity(MainObject.Data["object"].Single().Id, false);
             if (toFollowOrLike == null)
             {
-                await GetEntityTask.Make(MainObject.Data["object"].Single().Id, _connection);
+                await GetEntityTask.Make(MainObject.Data["object"].Single().Id, _connection, _data.CurrentServer);
                 return true;
             }
 

@@ -9,6 +9,7 @@ namespace Kroeg.EntityStore.Models
         public DateTime Added { get; set; }
         public DateTime NextAttempt { get; set; }
         public int AttemptCount { get; set; }
+        public int Context { get; set; }
 
         public string Action { get; set; }
         public string Data { get; set; }

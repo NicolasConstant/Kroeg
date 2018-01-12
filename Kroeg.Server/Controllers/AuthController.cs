@@ -285,7 +285,7 @@ namespace Kroeg.Server.Controllers
 
                 foreach (var user in users)
                 {
-                    await DeliverToActivityPubTask.Make(new DeliverToActivityPubData { ObjectId = resultEntity.Id, TargetInbox = user.Data["inbox"].First().Id }, _connection);
+                    await DeliverToActivityPubTask.Make(new DeliverToActivityPubData { ObjectId = resultEntity.Id, TargetInbox = user.Data["inbox"].First().Id }, _connection, _entityConfiguration.CurrentServer);
                 }
 
                 transaction.Commit();

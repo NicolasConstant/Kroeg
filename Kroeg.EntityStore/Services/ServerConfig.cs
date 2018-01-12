@@ -12,6 +12,7 @@ using Kroeg.EntityStore.Models;
 using System.Data;
 using Dapper;
 using System.Data.Common;
+using System.Diagnostics;
 
 namespace Kroeg.EntityStore.Services
 {
@@ -53,6 +54,14 @@ namespace Kroeg.EntityStore.Services
                 _currentServer = _servers.First().Value;
 
             _entityStore.CurrentServer = _currentServer.DbId;
+        }
+
+        internal void Prepare(int dbId)
+        {
+            Debug.Assert(_servers.ContainsKey(dbId));
+
+            _entityStore.CurrentServer = dbId;
+            _currentServer = _servers[dbId];
         }
 
         public async Task Prime(APEntity entity)

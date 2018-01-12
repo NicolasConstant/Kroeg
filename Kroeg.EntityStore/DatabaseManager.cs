@@ -159,7 +159,7 @@ namespace Kroeg.EntityStore
             int id = _connection.ExecuteScalar<int>("insert into \"Attributes\" (\"Uri\") values (@Uri) on conflict (\"Uri\") do update set \"Uri\" = @Uri returning \"AttributeId\"", new { Uri = "_instance" });
             int entity = _connection.ExecuteScalar<int>("insert into \"TripleEntities\" (\"IdId\", \"Type\", \"Updated\", \"IsOwner\") values (@Id, 'https://puckipedia.com/kroeg/ns#Server', @Updated, true)", new { Id = id, Updated = DateTime.Now });
             _connection.Execute(@"alter table ""TripleEntities"" alter column ""IsOwner"" type int using case when false then null else @Id end, add foreign key (""IsOwner"") references ""TripleEntities"" (""EntityId"")", new { Id = entity });
-
+            _connection.Execute(@"alter table ""EventQueue"" add column ""Context"" int references ""TripleEntities""");
             _connection.Execute("insert into kroeg_migrations (\"Name\") values ('kaaskop')");
         }
     }

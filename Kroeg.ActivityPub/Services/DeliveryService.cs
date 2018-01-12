@@ -162,7 +162,7 @@ namespace Kroeg.ActivityPub.Services
                 {
                     ObjectId = entity.Id,
                     TargetInbox = targetUrl
-                }, _connection);
+                }, _connection, _configuration.CurrentServer);
         }
     }
 }

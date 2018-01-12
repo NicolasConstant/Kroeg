@@ -7,6 +7,7 @@ using System.Data;
 using Dapper;
 using System.Transactions;
 using System.Data.Common;
+using Kroeg.EntityStore.Services;
 
 namespace Kroeg.EntityStore
 {
@@ -21,6 +22,9 @@ namespace Kroeg.EntityStore
 
         public static async Task Go(DbConnection connection, EventQueueItem item, IServiceProvider provider, DbTransaction transaction)
         {
+            var serverConfig = provider.GetService<ServerConfig>();
+            serverConfig.Prepare(item.Context);
+
             var type = Type.GetType(item.Action);
             BaseTask resolved = null;
 
@@ -62,15 +66,16 @@ namespace Kroeg.EntityStore
     {
         protected T Data;
 
-        public static async Task Make(T data, DbConnection connection, DateTime? nextAttempt = null)
+        public static async Task Make(T data, DbConnection connection, APEntity context, DateTime? nextAttempt = null)
         {
             var type = typeof(TR).AssemblyQualifiedName;
 
-            await connection.ExecuteAsync("insert into \"EventQueue\" (\"Action\", \"Added\", \"Data\", \"NextAttempt\", \"AttemptCount\") values (@Action, @Added, @Data, @NextAttempt, 0)",
+            await connection.ExecuteAsync("insert into \"EventQueue\" (\"Action\", \"Added\", \"Data\", \"NextAttempt\", \"Context\", \"AttemptCount\") values (@Action, @Added, @Data, @NextAttempt, @Context, 0)",
                 new EventQueueItem
                 {
                     Action = type,
                     Added = DateTime.Now,
+                    Context = context.DbId,
                     Data = JsonConvert.SerializeObject(data),
                     NextAttempt = nextAttempt ?? DateTime.Now
                 });
