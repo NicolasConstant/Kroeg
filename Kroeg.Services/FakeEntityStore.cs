@@ -38,7 +38,7 @@ namespace Kroeg.EntityStore.Store
 
             // doesn't exist, so try non-fragment
             entity = await Bypass.GetEntity(parsedId, false);
-            if (entity != null && entity.IsOwner)
+            if (entity != null && entity.OwnerId != null)
             {
                 // exists, and I own it!
                 var result = await _fakeEntityService.BuildFakeObject(entity, fragment);

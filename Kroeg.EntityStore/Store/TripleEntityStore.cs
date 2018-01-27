@@ -236,7 +236,7 @@ namespace Kroeg.EntityStore.Store
 
             stopwatch.Stop();
             _logger.LogWarning("Molding {id} from cache took {time}", mainObj.Id, stopwatch.Elapsed);
-            return new APEntity { Data = mainObj, Id = mainObj.Id, Updated = mold.Updated, IsOwner = mold.IsOwner == CurrentServer, Type = mold.Type, DbId = mold.EntityId };
+            return new APEntity { Data = mainObj, Id = mainObj.Id, Updated = mold.Updated, IsOwner = mold.IsOwner == CurrentServer, OwnerId = mold.IsOwner, Type = mold.Type, DbId = mold.EntityId };
         }
 
         private async Task<APEntity> _build(APTripleEntity mold)

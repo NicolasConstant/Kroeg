@@ -21,6 +21,8 @@ namespace Kroeg.EntityStore.Models
 
         public int DbId { get; set; }
 
+        public int? OwnerId { get; set; }
+
         public static APEntity From(string id, ASObject @object)
         {
             var type = @object.Type.FirstOrDefault();
@@ -38,7 +40,7 @@ namespace Kroeg.EntityStore.Models
 
         public APEntity Clone()
         {
-            return new APEntity { Id = Id, Data = Data.Clone(), Type = Type, Updated = Updated, IsOwner = IsOwner, DbId = DbId };
+            return new APEntity { Id = Id, Data = Data.Clone(), Type = Type, Updated = Updated, IsOwner = IsOwner, DbId = DbId, OwnerId = OwnerId };
         }
 
         public static APEntity From(ASObject @object, bool isOwner = false)
