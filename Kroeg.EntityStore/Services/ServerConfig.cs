@@ -76,6 +76,13 @@ namespace Kroeg.EntityStore.Services
             await _entityStore.StoreEntity(entity);
         }
 
+        internal async Task ForcePreload() => await _preloadServers();
+
+        internal static void UpdateServer(APEntity server)
+        {
+            _servers[server.DbId] = server;
+        }
+
         private async Task _preloadServers()
         {
             var servers = await _database.QueryAsync<APTripleEntity>("select * from \"TripleEntities\" where \"Type\" = 'https://puckipedia.com/kroeg/ns#Server'");

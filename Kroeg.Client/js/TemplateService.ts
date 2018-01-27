@@ -260,7 +260,8 @@ export class TemplateRenderer {
                         let prevItem = regs.item;
                         for (let subItem of resultItems) {
                             regs.item = subItem;
-                            element.appendChild(this._render(content, data, regs, renderResult, true, depth));
+                            if (!("x-for-if" in item.arguments) || this._parse(item.arguments["x-for-if"][0], data, regs, true) as boolean)
+                                element.appendChild(this._render(content, data, regs, renderResult, true, depth));
                         }
                         regs.item = prevItem;
 

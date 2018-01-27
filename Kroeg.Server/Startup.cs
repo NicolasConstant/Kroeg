@@ -88,8 +88,8 @@ namespace Kroeg.Server
             var signingKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(Configuration.GetSection("Kroeg")["TokenSigningKey"]));
             var tokenSettings = new JwtTokenSettings
             {
-                Audience =Configuration.GetSection("Kroeg")["BaseUri"],
-                Issuer = Configuration.GetSection("Kroeg")["BaseUri"],
+                Audience = "_kroeg_",
+                Issuer = "_kroeg_",
                 ExpiryTime = TimeSpan.FromDays(30),
                 Credentials = new SigningCredentials(signingKey, SecurityAlgorithms.HmacSha256),
                 ValidationParameters = new TokenValidationParameters
@@ -97,11 +97,11 @@ namespace Kroeg.Server
                     ValidateIssuerSigningKey = true,
                     IssuerSigningKey = signingKey,
 
-                    ValidateIssuer = true,
-                    ValidIssuer = Configuration.GetSection("Kroeg")["BaseUri"],
+                    ValidateIssuer = false,
+                    ValidIssuer = "_kroeg_",
 
-                    ValidateAudience = true,
-                    ValidAudience = Configuration.GetSection("Kroeg")["BaseUri"],
+                    ValidateAudience = false,
+                    ValidAudience = "_kroeg_",
 
                     ValidateLifetime = true,
                     ClockSkew = TimeSpan.Zero
@@ -150,8 +150,8 @@ namespace Kroeg.Server
                 .AddJwtBearer((options) => {
                     options.TokenValidationParameters = tokenSettings.ValidationParameters;
 
-                    options.Audience =Configuration.GetSection("Kroeg")["BaseUri"];
-                    options.ClaimsIssuer = Configuration.GetSection("Kroeg")["BaseUri"];
+                    options.Audience = "_kroeg_";
+                    options.ClaimsIssuer = "_kroeg_";
                 });
             
             services.ConfigureApplicationCookie((options) => {

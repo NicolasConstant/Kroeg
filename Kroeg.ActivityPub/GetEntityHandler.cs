@@ -77,7 +77,7 @@ namespace Kroeg.ActivityPub
                     || entity.Type == "https://www.w3.org/ns/activitystreams#Collection"
                     || entity.Type.StartsWith("_"))
                 {
-                    if (entity.IsOwner && !entity.Data["totalItems"].Any())
+                    if (entity.OwnerId != null && !entity.Data["totalItems"].Any())
                         try {
                             return APEntity.From(await _getCollection(entity, arguments), true);
                         } catch (FormatException) {

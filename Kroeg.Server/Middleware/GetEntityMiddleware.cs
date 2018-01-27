@@ -103,6 +103,7 @@ namespace Kroeg.Server.Middleware
 
             if (targetEntity == null)
             {
+                if (context.Request.Path.ToString().StartsWith(entityData.BasePath)) context.Request.Path = "/" + context.Request.Path.ToString().Substring(entityData.BasePath.Length);
                 await _next(context);
                 return;
             }
@@ -209,6 +210,7 @@ namespace Kroeg.Server.Middleware
 
             if (!context.Response.HasStarted)
             {
+                if (context.Request.Path.ToString().StartsWith(entityData.BasePath)) context.Request.Path = "/" + context.Request.Path.ToString().Substring(entityData.BasePath.Length);
                 await _next(context);
             }
         }

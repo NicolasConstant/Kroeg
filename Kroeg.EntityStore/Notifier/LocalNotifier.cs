@@ -6,6 +6,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using Dapper;
 using Newtonsoft.Json;
+using Kroeg.EntityStore.Services;
 using Npgsql;
 
 namespace Kroeg.EntityStore.Notifier
@@ -13,15 +14,22 @@ namespace Kroeg.EntityStore.Notifier
     public class LocalNotifier : INotifier
     {
         private readonly NpgsqlConnection _connection;
+        private readonly ServerConfig _serverConfig;
 
-        public LocalNotifier(NpgsqlConnection connection)
+        public LocalNotifier(NpgsqlConnection connection, ServerConfig serverConfig)
         {
             _connection = connection;
             _connection.Notification += _onNotification;
+            _serverConfig = serverConfig;
         }
 
-        private void _onNotification(object sender, NpgsqlNotificationEventArgs e)
+        private async void _onNotification(object sender, NpgsqlNotificationEventArgs e)
         {
+            if (e.Condition == "kroeg_updateserver")
+            {
+                await _serverConfig.ForcePreload();
+            }
+
             if (e.Condition != "kroeg") return;
 
             var data = JsonConvert.DeserializeObject<_notifyObject>(e.AdditionalInformation);
@@ -56,6 +64,7 @@ namespace Kroeg.EntityStore.Notifier
             }
 
             await _connection.ExecuteAsync("LISTEN kroeg;");
+            await _connection.ExecuteAsync("LISTEN kroeg_updateserver;");
             if (!_actions.ContainsKey(path)) _actions[path] = new List<Action<string>>();
             _actions[path].Add(toRun);
         }

@@ -13,6 +13,7 @@ using System.Data.Common;
 using System.Diagnostics;
 using Npgsql;
 using Microsoft.Extensions.Configuration;
+using Kroeg.EntityStore.Services;
 
 namespace Kroeg.EntityStore.Store
 {
@@ -369,6 +370,12 @@ namespace Kroeg.EntityStore.Store
 
             entity.DbId = exists.EntityId;
             _quickMap[entity.Id] = entity.Clone();
+
+            if (entity.Data.Type.Contains("https://puckipedia.com/kroeg/ns#Server"))
+            {
+                ServerConfig.UpdateServer(entity.Clone());
+                await _connection.ExecuteAsync("notify kroeg_updateserver");
+            }
 
             return entity;
         }

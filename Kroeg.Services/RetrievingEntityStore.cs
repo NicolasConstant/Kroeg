@@ -69,7 +69,7 @@ namespace Kroeg.EntityStore.Store
                 var possibilities = (await _getRE().Query(new RelevantEntitiesService.ContainsAnyStatement("https://www.w3.org/ns/activitystreams#url") { id })).Where(a => Uri.IsWellFormedUriString(a.Id, UriKind.Absolute) && (new Uri(a.Id)).GetLeftPart(UriPartial.Authority) == origin).ToList();
                 if (possibilities.Count == 1) entity = possibilities.First();
             }*/
-            if (entity != null && !entity.IsOwner && entity.Data.Type.Any(_collections.Contains) && doRemote) entity = null;
+            if (entity != null && entity.OwnerId == null && entity.Data.Type.Any(_collections.Contains) && doRemote) entity = null;
             if (entity != null || !doRemote) return entity;
 
             var htc = new HttpClient();
