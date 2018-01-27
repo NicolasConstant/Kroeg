@@ -87,7 +87,7 @@ namespace Kroeg.ActivityStreams
         public JObject Serialize(bool compact)
         {
             if (SubObject != null)
-                return SubObject.Serialize(false, compact);
+                return SubObject.Serialize(null, false, compact);
             else if (Id != null)
                 return new JObject { ["@id"] = Id };
             else if (Primitive != null && Type != null)

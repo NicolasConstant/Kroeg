@@ -59,7 +59,7 @@ namespace Kroeg.Services
             foreach (var headerKey in parameters["headers"].Split(' '))
             {
                 if (headerKey == "(request-target)") toSign.Append($"(request-target): {context.Request.Method.ToLower()} {context.Request.Path}{context.Request.QueryString}\n");
-                else toSign.Append($"{headerKey}: {string.Join(", ", context.Request.Headers[headerKey])}\n");
+                else toSign.Append($"{headerKey}: {string.Join(", ", ((IEnumerable<string>) context.Request.Headers[headerKey]) ?? (new string[] {}))}\n");
             }
             toSign.Remove(toSign.Length - 1, 1);
 

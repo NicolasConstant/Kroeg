@@ -72,7 +72,7 @@ namespace Kroeg.Server.ConsoleSystem
         {
             var provider = _services.BuildServiceProvider();
             var sevc = provider.GetService<ServerConfig>();
-            await ActivityStreams.ASObject.SetContext(JsonLDConfig.GetContext(true), "render/context");
+            await ActivityStreams.ASObject.SetContext(JsonLDConfig.GetContext(true));
             await sevc.Prepare(new Uri(baseUri));
 
 

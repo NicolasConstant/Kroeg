@@ -60,6 +60,19 @@ namespace Kroeg.EntityStore.Services
             IEnumerator IEnumerable.GetEnumerator() => Statements.GetEnumerator();
         }
 
+        public class InCollectionStatement : IQueryStatement
+        {
+            public string CollectionId { get; set; }
+
+            public InCollectionStatement(string inbox)
+            {
+                CollectionId = inbox;
+            }
+
+            public IEnumerable<string> RequiredProperties => new string[] { CollectionId };
+            public string BuildSQL(Dictionary<string, int> map) => $"exists(select 1 from \"CollectionItems\" where \"CollectionId\" = {map[CollectionId]} and \"CollectionItemId\" = a.\"EntityId\")";
+        }
+
         public class AnyStatement : IQueryStatement, IEnumerable<IQueryStatement>
         {
             public List<IQueryStatement> Statements { get; } = new List<IQueryStatement>();

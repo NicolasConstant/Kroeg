@@ -46,6 +46,28 @@ export class Wysiwyg implements IComponent {
         this.contentEditable.addEventListener("input", (ev) => this.onInput(ev));
         this.contentEditable.addEventListener("keypress", (ev) => this.onKey(ev));
         this.contentEditable.addEventListener("focus", () => this.update());
+
+        if (element.dataset.premention) {
+            this._processMentions(JSON.parse(element.dataset.premention));
+        }
+    }
+
+    private async _processMentions(items: any[]) {
+        let resp = document.createElement("p");
+        for (let item of items) {
+            let obj: AS.ASObject = (typeof(item) == 'string' ? await this.entityStore.get(item as string) : item) as AS.ASObject;
+            if (AS.take(obj, 'type') != "Mention") continue;
+            let subobj = await this.entityStore.get(AS.take(obj, 'href'));
+            if (subobj.id == this.entityStore.session.user.id) continue;
+            let a = document.createElement("a");
+            a.classList.add('mention');
+            a.href = subobj.id;
+            a.innerText = '@' + AS.take(subobj, 'preferredUsername', subobj.id);
+            resp.appendChild(a);
+            resp.appendChild(document.createTextNode(" "));
+        }
+        resp.appendChild(document.createTextNode("reply"));
+        this.contentEditable.appendChild(resp);
     }
 
     private _findClassObj(base: Node, name: string): HTMLElement {

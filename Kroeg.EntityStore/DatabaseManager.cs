@@ -13,6 +13,8 @@ namespace Kroeg.EntityStore
         private readonly DbConnection _connection;
         private readonly IConfiguration _configuration;
 
+        private string lastMigration;
+
         public DatabaseManager(DbConnection connection, IConfiguration configuration)
         {
             _connection = connection;
@@ -39,7 +41,8 @@ namespace Kroeg.EntityStore
             _connection.Execute("create table if not exists kroeg_migrations (\"Id\" serial primary key, \"Name\" text)");
 
             var migrations = _connection.Query<KroegMigrationEntry>("select * from kroeg_migrations order by \"Id\" desc");
-            var lastMigration = migrations.FirstOrDefault()?.Name ?? "";
+            lastMigration = migrations.FirstOrDefault()?.Name ?? "";
+            _connection.Open();
             using (var trans = _connection.BeginTransaction())
             {
                 while (_todo.ContainsKey(lastMigration))
@@ -47,6 +50,7 @@ namespace Kroeg.EntityStore
 
                 trans.Commit();
             }
+            _connection.Close();
         }
 
         private void _createTables()

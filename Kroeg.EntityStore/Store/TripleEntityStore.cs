@@ -283,7 +283,7 @@ namespace Kroeg.EntityStore.Store
 
         private async Task<List<Triple>> _newTriples(APEntity entity)
         {
-            var data = entity.Data.Serialize(false, false);
+            var data = entity.Data.Serialize(null, false, false);
             List<Triple> result = new List<Triple>();
 
             var triples = _api.MakeRDF(data)["@default"];
@@ -316,7 +316,7 @@ namespace Kroeg.EntityStore.Store
             if (exists == null)
             {
                 entity.Updated = DateTime.Now;
-                var dbEntity = new APTripleEntity { Updated = entity.Updated, IsOwner = entity.IsOwner ? (int?)null : CurrentServer, Type = entity.Type };
+                var dbEntity = new APTripleEntity { Updated = entity.Updated, IsOwner = entity.IsOwner ? CurrentServer : (int?) null, Type = entity.Type };
                 var attr = (await ReverseAttribute(entity.Id, true)).Value;
                 dbEntity.IdId = attr;
                 dbEntity.EntityId = await _connection.ExecuteScalarAsync<int>("insert into \"TripleEntities\" (\"Updated\", \"IsOwner\", \"Type\", \"IdId\") values (@Updated, @IsOwner, @Type, @IdId) returning \"EntityId\"", dbEntity);

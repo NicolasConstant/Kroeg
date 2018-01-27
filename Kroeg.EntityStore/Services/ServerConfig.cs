@@ -87,6 +87,7 @@ namespace Kroeg.EntityStore.Services
         public string BaseUri => _currentServer.Data["url"].First().Id;
         public string BaseDomain => (new Uri(BaseUri)).Host;
         public string BasePath => (new Uri(BaseUri)).AbsolutePath;
+        public string Context => BaseUri + "render/context";
 
 
         public bool RewriteRequestScheme => _kroegSection["RewriteRequestScheme"] == "True";

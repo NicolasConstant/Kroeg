@@ -31,8 +31,9 @@ namespace Kroeg.ActivityPub.BackgroundTasks
         private readonly DeliveryService _deliveryService;
         private readonly SignatureVerifier _verifier;
         private readonly KeyService _keyService;
+        private readonly ServerConfig _serverConfig;
 
-        public DeliverToActivityPubTask(EventQueueItem item, IEntityStore entityStore, EntityFlattener entityFlattener, IServiceProvider serviceProvider, DeliveryService deliveryService, SignatureVerifier verifier, KeyService keyService) : base(item)
+        public DeliverToActivityPubTask(EventQueueItem item, IEntityStore entityStore, EntityFlattener entityFlattener, IServiceProvider serviceProvider, DeliveryService deliveryService, SignatureVerifier verifier, KeyService keyService, ServerConfig serverConfig) : base(item)
         {
             _entityStore = entityStore;
             _entityFlattener = entityFlattener;
@@ -40,6 +41,7 @@ namespace Kroeg.ActivityPub.BackgroundTasks
             _deliveryService = deliveryService;
             _verifier = verifier;
             _keyService = keyService;
+            _serverConfig = serverConfig;
         }
 
         private async Task<string> _buildSignature(string ownerId, HttpRequestMessage message)
@@ -76,13 +78,14 @@ namespace Kroeg.ActivityPub.BackgroundTasks
         public async Task PostToServer()
         {
             var entity = await _entityStore.GetEntity(Data.ObjectId, false);
+            Console.WriteLine(entity.Data.Serialize(_serverConfig.Context, true).ToString());
             var owner = await _entityStore.GetEntity(entity.Data["actor"].First().Id, false);
             var unflattened = await _entityFlattener.Unflatten(_entityStore, entity);
 
             var token = await _verifier.BuildJWS(owner, Data.TargetInbox);
 
             var hc = new HttpClient();
-            var serialized = unflattened.Serialize(true).ToString(Formatting.None);
+            var serialized = unflattened.Serialize(_serverConfig.Context, true).ToString(Formatting.None);
             var content = new StringContent(serialized, Encoding.UTF8);
             content.Headers.ContentType = new MediaTypeHeaderValue("application/ld+json");
             content.Headers.ContentType.Parameters.Add(new NameValueHeaderValue("profile", "\"https://www.w3.org/ns/activitystreams\""));

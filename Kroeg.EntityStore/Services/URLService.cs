@@ -56,7 +56,7 @@ namespace Kroeg.EntityStore.Services
             if (thing.StartsWith("%"))
                 return curr?.SelectToken(thing.Replace('%', '$'));
             if (thing == "resolve")
-                return curr == null ? null : (await store?.GetEntity(curr.ToObject<string>(), false))?.Data?.Serialize();
+                return curr == null ? null : (await store?.GetEntity(curr.ToObject<string>(), false))?.Data?.Serialize(_serverConfig.Context);
             if (thing == "guid")
                 return curr ?? Guid.NewGuid().ToString();
             if (thing == "shortguid")
@@ -146,7 +146,7 @@ namespace Kroeg.EntityStore.Services
                 categoryTwo = "create" + @object["object"].First().SubObject.Type.First().Split('#')[1];
 
             var format = _getFormat(types, category, parentId != null, categoryTwo);
-            var result = await _parseUriFormat(store, @object.Serialize(), format);
+            var result = await _parseUriFormat(store, @object.Serialize(_serverConfig.Context), format);
             if (parentId != null && result.StartsWith("+"))
                 return _append(parentId, result.Substring(1).ToLower());
 

@@ -52,7 +52,7 @@ namespace Kroeg.Mastodon
                 result.acct = result.username + "@" + (new Uri(entity.Id)).Host;
 
             if (entity.Data["icon"].Any())
-                result.avatar = result.avatar_static = entity.Data["icon"].First().Id ?? entity.Data["icon"].First().SubObject["url"].First().Id;
+                result.avatar = result.avatar_static = entity.Data["icon"].First().Id ?? entity.Data["icon"].First().SubObject["url"].First().Id ?? result.avatar;
 
             var followers = await _entityStore.GetEntity(entity.Data["followers"].First().Id, false);
             if (followers != null && followers.Data["totalItems"].Any())
@@ -475,6 +475,8 @@ namespace Kroeg.Mastodon
 
         private async Task<IActionResult> _queryPublic<T>(string max_id, string since_id, int limit, _processItem<T> process)
         {
+            var userId = User.FindFirst(JwtTokenSettings.ActorClaim).Value;
+            var user = await _entityStore.GetEntity(userId, false);
             if (!int.TryParse(max_id, out var fromId)) fromId = int.MaxValue;
             if (!int.TryParse(since_id, out var toId)) toId = int.MinValue;
 
@@ -494,6 +496,7 @@ namespace Kroeg.Mastodon
                         {
                             new RelevantEntitiesService.ContainsAnyStatement("https://www.w3.org/ns/activitystreams#to") { "https://www.w3.org/ns/activitystreams#Public" },
                             new RelevantEntitiesService.ContainsAnyStatement("https://www.w3.org/ns/activitystreams#bto") { "https://www.w3.org/ns/activitystreams#Public" },
+                            new RelevantEntitiesService.InCollectionStatement(user.Data["inbox"].First().Id)
                         }
                     }, fromId, toId, limit);
                 if (items.Count == 0) break;

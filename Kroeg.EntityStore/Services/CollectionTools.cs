@@ -62,14 +62,16 @@ namespace Kroeg.EntityStore.Services
 
         private async Task<IEnumerable<CollectionItem>> _filterAudience(string user, bool isOwner, int dbId, int count, int under = int.MaxValue, int above = int.MinValue, RelevantEntitiesService.IQueryStatement query = null)
         {
-            var postfix = "order by \"CollectionItemId\" desc " + (count > 0 ? $"limit {count}" : "");
+            var orderOrientation = above == int.MinValue ? " desc " : " asc ";
+
+            var postfix = "order by \"CollectionItemId\"" + orderOrientation + (count > 0 ? $"limit {count}" : "");
             if (isOwner && query == null)
-                return await _connection.QueryAsync<CollectionItem>("select * from \"CollectionItems\" WHERE \"CollectionItemId\" < @Under and \"CollectionItemId\" > @Above and \"CollectionId\" = @DbId " + postfix, new { Under = under, Above = above, DbId = dbId });
+                return (await _connection.QueryAsync<CollectionItem>("select * from \"CollectionItems\" WHERE \"CollectionItemId\" < @Under and \"CollectionItemId\" > @Above and \"CollectionId\" = @DbId " + postfix, new { Under = under, Above = above, DbId = dbId })).OrderByDescending(a => a.CollectionItemId);
 
             int? userId = null;
             if (user!= null) userId = await _entityStore.ReverseAttribute(user, false);
             if (userId == null && query == null)
-                return await _connection.QueryAsync<CollectionItem>("select * from \"CollectionItems\" WHERE \"CollectionItemId\" < @Under and \"CollectionItemId\" > @Above and \"IsPublic\" = TRUE and \"CollectionId\" = @DbId " + postfix, new { Under = under, Above = above, DbId = dbId });
+                return (await _connection.QueryAsync<CollectionItem>("select * from \"CollectionItems\" WHERE \"CollectionItemId\" < @Under and \"CollectionItemId\" > @Above and \"IsPublic\" = TRUE and \"CollectionId\" = @DbId " + postfix, new { Under = under, Above = above, DbId = dbId })).OrderByDescending(a => a.CollectionItemId);
 
              var ids = new List<int>();
              foreach (var audienceId in _audienceIds)
@@ -92,13 +94,13 @@ namespace Kroeg.EntityStore.Services
 
 
 // select c.* from "CollectionItems" c, "TripleEntities" e WHERE e."EntityId" = c."ElementId" and "CollectionItemId" < @Under and exists(select 1 from "Triples" where "PredicateId" = any(@Ids) and "AttributeId" = @UserId and "SubjectId" = e."IdId" and "SubjectEntityId" = e."EntityId" limit 1)
-            return await _connection.QueryAsync<CollectionItem>(
+            return (await _connection.QueryAsync<CollectionItem>(
                 "select c.* from \"CollectionItems\" c, \"TripleEntities\" a WHERE a.\"EntityId\" = c.\"ElementId\" and \"CollectionItemId\" < @Under and \"CollectionItemId\" > @Above and \"CollectionId\" = @DbId "
                 + (isOwner ? "" : userId == null ? " and c.\"IsPublic\" = true" : "and exists(select 1 from \"Triples\" where \"PredicateId\" = any(@Ids) and \"AttributeId\" = @UserId and \"SubjectId\" = a.\"IdId\" and \"SubjectEntityId\" = a.\"EntityId\" limit 1) ")
                 + (query == null ? " " : $" and {query.BuildSQL(queryMap)} ")
-                 + "order by c.\"CollectionItemId\" desc " + (count > 0 ? $"limit {count}" : ""),
+                 + "order by c.\"CollectionItemId\"" + orderOrientation + (count > 0 ? $"limit {count}" : ""),
                  new { Under = under, Above = above, Ids = ids, UserId = userId ?? 0, DbId = dbId }
-            );
+            )).OrderByDescending(a => a.CollectionItemId);
         }
 
         public class EntityCollectionItem {

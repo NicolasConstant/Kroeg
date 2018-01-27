@@ -20,14 +20,12 @@ namespace Kroeg.ActivityStreams
 
         private static Dictionary<string, JObject> _objectStore = new Dictionary<string, JObject>();
         private static JsonLD.API _api => new JsonLD.API(_resolve);
-        private static string _contextUrl;
 
         public List<string> CompactedTypes => Type.Select(_ldContext.CompactIRI).ToList();
-        public static async Task SetContext(JToken context, string contextUrl)
+        public static async Task SetContext(JToken context)
         {
             _context = context;
             _ldContext = await _api.BuildContext(context);
-            _contextUrl = contextUrl;
         }
 
         private static async Task<JObject> _resolve(string uri)
@@ -110,7 +108,7 @@ namespace Kroeg.ActivityStreams
             return o;
         }
 
-        public JObject Serialize(bool addContext = false, bool compact = true)
+        public JObject Serialize(string context, bool addContext = false, bool compact = true)
         {
             var newObject = new JObject();
             if (Id != null) newObject["@id"] = Id;
@@ -127,7 +125,7 @@ namespace Kroeg.ActivityStreams
             if (compact)
             {
                 newObject = (JObject) _api.CompactExpanded(_ldContext, newObject);
-                if (addContext) newObject["@context"] = new JArray("https://www.w3.org/ns/activitystreams", _contextUrl);
+                if (addContext) newObject["@context"] = new JArray("https://www.w3.org/ns/activitystreams", context ?? _context);
             }
 
             return newObject;

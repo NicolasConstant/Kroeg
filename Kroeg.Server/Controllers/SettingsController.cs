@@ -216,7 +216,7 @@ namespace Kroeg.Server.Controllers
                         return NotFound();
                     obj = await _flattener.Unflatten(_entityStore, entOut);
                     transaction.Commit();
-                    return Content(obj.Serialize().ToString(), "application/ld+json; profile=\"https://www.w3.org/ns/activitystreams\"");
+                    return Content(obj.Serialize(_entityData.Context).ToString(), "application/ld+json; profile=\"https://www.w3.org/ns/activitystreams\"");
                 }
             }
             catch (UnauthorizedAccessException e)
@@ -250,7 +250,7 @@ namespace Kroeg.Server.Controllers
                 relevantObject["relevant"].Add(ASTerm.MakeSubObject(item.Data));
             }
 
-            return Content((await _flattener.Unflatten(_entityStore, APEntity.From(relevantObject), 5)).Serialize().ToString(), "application/ld+json; profile=\"https://www.w3.org/ns/activitystreams\"");
+            return Content((await _flattener.Unflatten(_entityStore, APEntity.From(relevantObject), 5)).Serialize(_entityData.Context).ToString(), "application/ld+json; profile=\"https://www.w3.org/ns/activitystreams\"");
         }
 
         [Authorize, HttpPost("new")]

@@ -155,7 +155,7 @@ namespace Kroeg.ActivityPub
                             {
                                 var stored = await _mainStore.GetEntity(item, false);
                                 var unflattened = await _flattener.Unflatten(_mainStore, stored);
-                                var serialized = unflattened.Serialize(true).ToString(Formatting.None);
+                                var serialized = unflattened.Serialize(_entityData.Context, true).ToString(Formatting.None);
                                 await context.Response.WriteAsync($"id: {item}\ndata: {serialized}\n\n");
                                 await context.Response.Body.FlushAsync();
                             }
@@ -163,6 +163,7 @@ namespace Kroeg.ActivityPub
                     }
                     try
                     {
+                        tokenSource.CancelAfter(TimeSpan.FromSeconds(60));
                         await ((NpgsqlConnection)_connection).WaitAsync(tokenSource.Token);
                     }
                     catch (OperationCanceledException)
@@ -255,7 +256,7 @@ namespace Kroeg.ActivityPub
                             var stored = await _mainStore.GetEntity(item, false);
 
                             var unflattened = await _flattener.Unflatten(_mainStore, stored);
-                            var serialized = Encoding.UTF8.GetBytes(unflattened.Serialize().ToString(Formatting.None));
+                            var serialized = Encoding.UTF8.GetBytes(unflattened.Serialize(_entityData.Context).ToString(Formatting.None));
                             var segment = new ArraySegment<byte>(serialized);
                             await socket.SendAsync(segment, WebSocketMessageType.Text, true, CancellationToken.None);
                         }

@@ -3,7 +3,7 @@
 	<div class="col-md-12 nopad kroeg-content">
 		<div x-if="!AS.has('summary')" data-component="emoji" data-context="{{AS.take('id')}}">{{Renderer.clean(AS.take('content'))}}</div>
 		<details x-if="AS.has('summary')">
-			<summary>{{Renderer.sanitize(AS.take('summary'))}}</summary>
+			<summary>{{Renderer.sanitize(AS.take('summary'))}} <span x-for-in="{{AS.get('tag')}}"><span x-render-id="item"><a href="{{AS.take('href')}}" x-if="AS.contains('type', 'Mention')">@{{AS.take('name')}}</a> </span></span></summary>
 			<div data-component="emoji" data-context="{{AS.take('id')}}" class="kroeg-content-ws">{{Renderer.clean(AS.take('content'))}}</div>
 		</details>
 

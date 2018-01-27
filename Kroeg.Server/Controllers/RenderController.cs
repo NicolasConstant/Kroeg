@@ -16,12 +16,14 @@ namespace Kroeg.Server.Controllers
     public class RenderController : Controller
     {
         private readonly IEntityStore _entityStore;
+        private readonly ServerConfig _serverConfig;
         private readonly TemplateService _templateService;
 
-        public RenderController(IEntityStore entityStore, TemplateService templateService, CollectionTools collectionTools)
+        public RenderController(IEntityStore entityStore, TemplateService templateService, CollectionTools collectionTools, ServerConfig serverConfig)
         {
             _entityStore = new CollectionEntityStore(collectionTools, entityStore);
             _templateService = templateService;
+            _serverConfig = serverConfig;
         }
 
         [Authorize("pass"), HttpGet("refresh")]
@@ -50,7 +52,7 @@ namespace Kroeg.Server.Controllers
 
             var text = await _templateService.ParseTemplate("body", _entityStore, obj, regs);
 
-            var objectTemplates = regs.UsedEntities.Select(a => new Tuple<string, JToken>(a.Key, a.Value.Data.Serialize(true))).ToDictionary(a => a.Item1, a => a.Item2);
+            var objectTemplates = regs.UsedEntities.Select(a => new Tuple<string, JToken>(a.Key, a.Value.Data.Serialize(_serverConfig.Context, true))).ToDictionary(a => a.Item1, a => a.Item2);
             if (Request.Query.ContainsKey("nopreload")) objectTemplates.Clear();
 
             var page = _templateService.PageTemplate.Replace("<div class=\"container\" x-render=\"body\"></div>", text).Replace("{{preload}}", JsonConvert.SerializeObject(objectTemplates).Replace("<", "\\u003C"));
@@ -68,9 +70,12 @@ namespace Kroeg.Server.Controllers
             var regs = new TemplateService.Registers();
             regs.UsedEntities[obj.Id] = obj;
 
+            if (obj.Data["cc"].Any(a => a.Id == "https://www.w3.org/ns/activitystreams#Public"))
+                Response.Headers.Add("X-Robots-Tag", "nofollow, noindex");
+
             var text = await _templateService.ParseTemplate("body", _entityStore, obj, regs);
 
-            var objectTemplates = regs.UsedEntities.Select(a => new Tuple<string, JToken>(a.Key, a.Value.Data.Serialize(true))).ToDictionary(a => a.Item1, a => a.Item2);
+            var objectTemplates = regs.UsedEntities.Select(a => new Tuple<string, JToken>(a.Key, a.Value.Data.Serialize(_serverConfig.Context, true))).ToDictionary(a => a.Item1, a => a.Item2);
             if (Request.Query.ContainsKey("nopreload")) objectTemplates.Clear();
 
             var page = _templateService.PageTemplate.Replace("<div class=\"container\" x-render=\"body\"></div>", text).Replace("{{preload}}", JsonConvert.SerializeObject(objectTemplates).Replace("<", "\\u003C"));

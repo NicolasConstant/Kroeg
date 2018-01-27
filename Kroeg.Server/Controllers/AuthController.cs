@@ -207,9 +207,7 @@ namespace Kroeg.Server.Controllers
                 create["object"].Add(ASTerm.MakeSubObject(obj));
                 create["to"].Add(ASTerm.MakeId("https://www.w3.org/ns/activitystreams#Public"));
 
-                Console.WriteLine($"--- creating actor. Unflattened:\n{create.Serialize().ToString(Formatting.Indented)}");
                 var apo = await _entityFlattener.FlattenAndStore(_entityStore, create);
-                Console.WriteLine($"Flat: {apo.Data.Serialize().ToString(Formatting.Indented)}\n----");
                 var handler = new CreateActorHandler(_entityStore, apo, null, null, User, _collectionTools, _entityConfiguration, _connection);
                 handler.UserOverride = apuser.Id;
                 await handler.Handle();
@@ -242,11 +240,11 @@ namespace Kroeg.Server.Controllers
             List<JObject> result = new List<JObject>();
             if (type == "emoji")
             {
-                result.AddRange((await _relevantEntities.FindEmojiLike(data)).Select(a => a.Data.Serialize(true)));
+                result.AddRange((await _relevantEntities.FindEmojiLike(data)).Select(a => a.Data.Serialize(_entityConfiguration.Context, true)));
             }
             else if (type == "actor")
             {
-                result.AddRange((await _relevantEntities.FindUsersWithNameLike(data)).Select(a => a.Data.Serialize(true)));
+                result.AddRange((await _relevantEntities.FindUsersWithNameLike(data)).Select(a => a.Data.Serialize(_entityConfiguration.Context, true)));
             }
 
             return Json(result);

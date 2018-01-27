@@ -5,6 +5,7 @@ using Kroeg.EntityStore.Models;
 using Kroeg.EntityStore.Store;
 using Kroeg.Services;
 using Kroeg.EntityStore.Services;
+using Kroeg.ActivityPub.BackgroundTasks;
 
 namespace Kroeg.ActivityPub.ServerToServer
 {

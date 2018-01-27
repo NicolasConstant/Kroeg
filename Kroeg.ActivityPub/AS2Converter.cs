@@ -32,12 +32,14 @@ namespace Kroeg.ActivityPub
             private IEntityStore _entityStore;
             private EntityFlattener _flattener;
             private AS2ConverterFactory _factory;
+            private ServerConfig _serverConfig;
 
-            public AS2Converter(IEntityStore entityStore, EntityFlattener flattener, AS2ConverterFactory factory)
+            public AS2Converter(IEntityStore entityStore, EntityFlattener flattener, AS2ConverterFactory factory, ServerConfig serverConfig)
             {
                 _entityStore = entityStore;
                 _flattener = flattener;
                 _factory = factory;
+                _serverConfig = serverConfig;
             }
 
             public async Task<ASObject> Parse(Stream request)
@@ -64,7 +66,7 @@ namespace Kroeg.ActivityPub
                 var depth = Math.Min(int.Parse(request.Query["depth"].FirstOrDefault() ?? "3"), 5);
                 var unflattened = await _flattener.Unflatten(_entityStore, toRender, depth, isOwner: toRender.IsOwner);
 
-                await response.WriteAsync(unflattened.Serialize(true).ToString());
+                await response.WriteAsync(unflattened.Serialize(_serverConfig.Context, true).ToString());
             }
         }
     }

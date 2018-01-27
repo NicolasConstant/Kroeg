@@ -66,7 +66,7 @@ namespace Kroeg.Server.Controllers
             var entity = await _entityStore.GetEntity(id, true);
             if (entity == null) return NotFound();
 
-            return Content(entity.Data.Serialize().ToString(), "application/ld+json; profile=\"https://www.w3.org/ns/activitystreams\"");
+            return Content(entity.Data.Serialize(_entityData.Context).ToString(), "application/ld+json; profile=\"https://www.w3.org/ns/activitystreams\"");
         }
 
         [HttpPost("entity")]

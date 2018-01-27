@@ -238,7 +238,7 @@ namespace Kroeg.Server
                 ActivatorUtilities.CreateInstance<BackgroundTaskQueuer>(serviceProvider);
             }
 
-            await ActivityStreams.ASObject.SetContext(JsonLDConfig.GetContext(true), "render/context");
+            await ActivityStreams.ASObject.SetContext(JsonLDConfig.GetContext(true));
 
             var scop = app.ApplicationServices.CreateScope().ServiceProvider;
             var sevc = scop.GetRequiredService<ServerConfig>();
@@ -259,7 +259,7 @@ namespace Kroeg.Server
                 obj.Id = Console.ReadLine();
                 if (string.IsNullOrWhiteSpace(obj.Id)) obj.Id = obj["url"][0].Id;
 
-                Console.WriteLine(obj.Serialize().ToString());
+                Console.WriteLine(obj.Serialize(obj["url"][0].Id + "render/context").ToString());
                 Console.Write("OK? [y/n] ");
                 if (!Console.ReadLine().Contains("y")) continue;
 
