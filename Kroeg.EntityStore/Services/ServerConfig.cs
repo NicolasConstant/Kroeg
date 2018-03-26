@@ -36,7 +36,7 @@ namespace Kroeg.EntityStore.Services
 
         public async Task Prepare(Uri request)
         {
-            if (_servers == null) await _preloadServers();
+            if (_servers == null) await _preloadServers(true);
             _currentServer = null;
             foreach (var server in _servers.Values)
             {
@@ -76,18 +76,18 @@ namespace Kroeg.EntityStore.Services
             await _entityStore.StoreEntity(entity);
         }
 
-        internal async Task ForcePreload() => await _preloadServers();
+        internal async Task ForcePreload() => await _preloadServers(false);
 
         internal static void UpdateServer(APEntity server)
         {
             _servers[server.DbId] = server;
         }
 
-        private async Task _preloadServers()
+        private async Task _preloadServers(bool toggle)
         {
             var servers = await _database.QueryAsync<APTripleEntity>("select * from \"TripleEntities\" where \"Type\" = 'https://puckipedia.com/kroeg/ns#Server'");
             _servers = (await _entityStore.GetEntities(servers.Select(a => a.EntityId).ToList())).ToDictionary(a => a.DbId, a => a);
-            _database.Close();
+            if (toggle) _database.Close();
         }
 
         private readonly IConfigurationSection _kroegSection;

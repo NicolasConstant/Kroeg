@@ -23,11 +23,11 @@ namespace Kroeg.EntityStore.Notifier
             _serverConfig = serverConfig;
         }
 
-        private async void _onNotification(object sender, NpgsqlNotificationEventArgs e)
+        private void _onNotification(object sender, NpgsqlNotificationEventArgs e)
         {
             if (e.Condition == "kroeg_updateserver")
             {
-                await _serverConfig.ForcePreload();
+                _serverConfig.ForcePreload().Wait();
             }
 
             if (e.Condition != "kroeg") return;

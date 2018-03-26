@@ -392,7 +392,9 @@ namespace Kroeg.Server.Services.Template
                         foreach (var forItem in forItems)
                         {
                             regs.Engine.SetValue(forIn, forItem);
-                            content.Append(await _parseElement(doc, subitem, entityStore, data, regs, depth + 1));
+                            var res = !subitem.Arguments.ContainsKey("x-for-if") || (bool) _parse(subitem.Arguments["x-for-if"][0].Data, data, regs);
+                            if (res)
+                                content.Append(await _parseElement(doc, subitem, entityStore, data, regs, depth + 1));
                         }
                     }
                     else

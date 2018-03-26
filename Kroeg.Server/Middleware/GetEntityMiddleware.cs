@@ -11,6 +11,10 @@ using Microsoft.Extensions.Primitives;
 using Microsoft.EntityFrameworkCore.Storage;
 using Kroeg.ActivityPub;
 using Kroeg.EntityStore.Services;
+using System.Data;
+using System.Transactions;
+using System.Data.Common;
+using Npgsql;
 
 // For more information on enabling MVC for empty projects, visit https://go.microsoft.com/fwlink/?LinkID=397860
 

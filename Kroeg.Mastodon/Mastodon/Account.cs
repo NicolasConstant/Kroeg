@@ -27,7 +27,6 @@ namespace Kroeg.Mastodon
 		[JsonProperty("avatar_static")] public string avatar_static { get; set; }
 		[JsonProperty("header")] public string header { get; set; }
 		[JsonProperty("header_static")] public string header_static { get; set; }
-		[JsonProperty("moved")] public Account moved { get; set; }
 		[JsonProperty("source")] public Source source { get; set; }
     }
 }

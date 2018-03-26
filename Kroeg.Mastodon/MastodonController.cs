@@ -30,18 +30,17 @@ namespace Kroeg.Mastodon
         {
             var result = new Account
             {
-                id = Uri.EscapeDataString(entity.Id),
+                id = entity.DbId.ToString(),
                 username = (string) entity.Data["preferredUsername"].FirstOrDefault()?.Primitive ?? entity.Id,
                 display_name = (string) entity.Data["name"].FirstOrDefault()?.Primitive ?? entity.Id,
                 locked = entity.Data["manuallyApprovesFollowers"].Any(a => (bool) a.Primitive),
-                created_at = DateTime.Now,
+                created_at = DateTime.Now.ToUniversalTime(),
                 note = (string) entity.Data["summary"].FirstOrDefault()?.Primitive ?? "",
                 url = (string) entity.Data["url"].FirstOrDefault()?.Primitive ?? entity.Id,
-                moved = null,
 
-                followers_count = -1,
-                following_count = -1,
-                statuses_count = -1,
+                followers_count = 1,
+                following_count = 1,
+                statuses_count = 1,
 
                 avatar = "",
                 avatar_static = ""
@@ -78,14 +77,13 @@ namespace Kroeg.Mastodon
 
             var status = new Status
             {
-                id = id ?? Uri.EscapeDataString(note.Id),
+                id = id ?? $"-{note.DbId}",
                 uri = note.Id,
                 url = note.Data["url"].FirstOrDefault()?.Id ?? note.Id,
                 account = await _processAccount(attributed),
-                in_reply_to_id = note.Data["inReplyTo"].Any() ? Uri.EscapeDataString(note.Data["inReplyTo"].FirstOrDefault()?.Id) : null,
                 reblog = null,
                 content = (string) note.Data["content"].First().Primitive,
-                created_at = DateTime.Parse((string) note.Data["published"].FirstOrDefault()?.Primitive ?? note.Updated.ToString()),
+                created_at = DateTime.Parse((string) note.Data["published"].FirstOrDefault()?.Primitive ?? note.Updated.ToString()).ToUniversalTime(),
                 emojis = new List<Emoji>(),
                 reblogs_count = 0,
                 favourites_count = 0,
@@ -113,7 +111,7 @@ namespace Kroeg.Mastodon
                 {
                     var user = await _entityStore.GetEntity(obj["href"].First().Id, true);
                     if (user == null) continue;
-                    status.mentions.Add(new Mention { id = Uri.EscapeDataString(user.Id), url = user.Id, username = (string) user.Data["preferredUsername"].FirstOrDefault().Primitive ?? user.Id, acct = user.Id });
+                    status.mentions.Add(new Mention { id = user.DbId.ToString(), url = user.Id, username = (string) user.Data["preferredUsername"].FirstOrDefault().Primitive ?? user.Id, acct = user.Id });
                 }
                 else if (obj != null && obj.Type.Contains("http://joinmastodon.org/ns#Emoji"))
                 {
@@ -139,7 +137,7 @@ namespace Kroeg.Mastodon
                     var url = (string) obj["url"].First().Id;
                     var attachment = new Attachment
                     {
-                        id = obj.Id ?? (note.Id + "#attachment/" + i.ToString()),
+                        id = obj.Id ?? ((note.DbId << 4) | i).ToString(),
                         type = mediaType.Split('/')[0],
                         url = url,
                         remote_url = url,
@@ -158,8 +156,11 @@ namespace Kroeg.Mastodon
             if (note.Data["inReplyTo"].Any())
             {
                 var reply = await _entityStore.GetEntity(note.Data["inReplyTo"].First().Id, true);
-                if (reply != null)
-                    status.in_reply_to_account_id = Uri.EscapeDataString(reply.Data["attributedTo"].First().Id);
+                if (reply != null) {
+                    status.in_reply_to_id = $"-{reply.DbId}";
+                    var acc = await _entityStore.GetEntity(reply.Data["attributedTo"].First().Id, true);
+                    status.in_reply_to_account_id = acc == null ? "0" : acc.DbId.ToString();
+                } else status.in_reply_to_id = "0";
             }
 
             return status;
@@ -302,14 +303,19 @@ namespace Kroeg.Mastodon
             return Json(parsed);
         }
 
+        [HttpGet("accounts/relationships")]
+        public IActionResult GetRelationships(string[] id)
+        {
+            return NotFound();
+        }
+
         [HttpGet("accounts/{id}")]
         public async Task<IActionResult> GetAccount(string id)
         {
             var userId = User.FindFirst(JwtTokenSettings.ActorClaim)?.Value;
             if (userId == null) return Unauthorized();
 
-            id = Uri.UnescapeDataString(id);
-            var user = await _entityStore.GetEntity(id, true);
+            var user = await _entityStore.GetDBEntity(int.Parse(id));
             if (user == null) return NotFound();
 
             return Json(await _processAccount(user));
@@ -321,8 +327,7 @@ namespace Kroeg.Mastodon
             var userId = User.FindFirst(JwtTokenSettings.ActorClaim)?.Value;
             if (userId == null) return Unauthorized();
 
-            id = Uri.UnescapeDataString(id);
-            var user = await _entityStore.GetEntity(id, true);
+            var user = await _entityStore.GetDBEntity(int.Parse(id));
             if (user == null) return NotFound();
 
             var me = await _entityStore.GetEntity(userId, false);
@@ -336,6 +341,7 @@ namespace Kroeg.Mastodon
             );
         }
 
+
         [HttpGet("statuses/{id}")]
         public async Task<IActionResult> GetStatus(string id)
         {
@@ -345,15 +351,11 @@ namespace Kroeg.Mastodon
             CollectionTools.EntityCollectionItem item = null;
             if (int.TryParse(id, out var idInt))
             {
-                item = await _collectionTools.GetCollectionItem(idInt);
-            }
-            else
-            {
-                var ent = await _entityStore.GetEntity(Uri.UnescapeDataString(id), true);
-                if (ent != null) item = new CollectionTools.EntityCollectionItem { CollectionItemId = -1, Entity = ent };
+                if (idInt >= 0) item = await _collectionTools.GetCollectionItem(idInt);
+                else item = new CollectionTools.EntityCollectionItem { CollectionItemId = -1, Entity = await _entityStore.GetDBEntity(-idInt) };                
             }
 
-            if (item == null) return NotFound();
+            if (item == null || item.Entity == null) return NotFound();
             var translated = await _translateStatus(item);
             if (translated == null) return NotFound();
             return Json(translated);
@@ -368,18 +370,14 @@ namespace Kroeg.Mastodon
             CollectionTools.EntityCollectionItem item = null;
             if (int.TryParse(id, out var idInt))
             {
-                item = await _collectionTools.GetCollectionItem(idInt);
+                if (idInt >= 0) item = await _collectionTools.GetCollectionItem(idInt);
+                else item = new CollectionTools.EntityCollectionItem { CollectionItemId = -1, Entity = await _entityStore.GetDBEntity(-idInt) };                
             }
-            else
-            {
-                var ent = await _entityStore.GetEntity(Uri.UnescapeDataString(id), true);
-                if (ent != null) item = new CollectionTools.EntityCollectionItem { CollectionItemId = -1, Entity = ent };
-            }
+            if (item == null || item.Entity == null) return NotFound();
 
             if (item.Entity.Data["object"].Any())
                 item.Entity = await _entityStore.GetEntity(item.Entity.Data["object"].First().Id, true);
 
-            if (item == null) return NotFound();
             var res = new Context { ancestors = new List<Status>(), descendants = new List<Status>() };
             while (item.Entity.Data["inReplyTo"].Any())
             {
